@@ -1,8 +1,6 @@
 # 만다라트 제작기
 
-| ![](mandalart_screenshot.jpeg)
- | ![](mandalart_screenshot_dark.jpeg)
- |
+| ![](mandalart_screenshot.jpeg) | ![](mandalart_screenshot_dark.jpeg) |
 | :--- | :--- |
 
 웹 브라우저에서 즉시 실행 가능한 **만다라트 제작기**입니다.
