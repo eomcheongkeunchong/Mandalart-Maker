@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 만다라트</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --h1-bg: #dbeafe; --h1-color: #1e293b; 
+            --h2-bg: #eff6ff; --h2-outer-bg: #dbeafe; --h2-color: #1e40af;
+            --h3-bg: #ffffff; --hover-bg: #f1f5f9;
+            --border-color: #94a3b8; --panel-bg: #ffffff;
+            --bg-color: #f8fafc; --text-color: #1e293b;
+            --done-color: #94a3b8; --panel-text: #334155;
+            --active-bg: #f0f7ff; --active-color: #1e40af;
+            --h1-active-bg: #dbeafe; --h1-active-color: #1e293b;
+            --input-bg: #ffffff; --input-border: #e2e8f0;
+            --btn-help-bg: #f1f5f9;
+            --btn-undo-bg: #e2e8f0; --btn-undo-text: #475569;
+            --btn-clear-bg: #fee2e2; --btn-clear-text: #ef4444;
+            --fs-global: 14px; --fs-h1: 23px; --fs-h2: 19px; --fs-h3: 17px;
+            --print-fs-h1: 16px; --print-fs-h2: 14px; --print-fs-h3: 12px;
+            --link-sky: #0ea5e9;
+        }
+
+        [data-theme="dark"] {
+            --h1-bg: #334155; --h1-color: #e1d6c4; 
+            --h2-bg: #1e293b; --h2-outer-bg: #334155; --h2-color: #bfdbfe;
+            --h3-bg: #0f172a; --hover-bg: #1e293b;
+            --border-color: #475569; --panel-bg: #0f172a;
+            --bg-color: #020617; --text-color: #f8fafc;
+            --done-color: #64748b; --panel-text: #cbd5e1;
+            --active-bg: #1e3a8a; --active-color: #eff6ff;
+            --h1-active-bg: #3b82f6; --h1-active-color: #ffffff;
+            --input-bg: #1e293b; --input-border: #475569;
+            --btn-help-bg: #1e293b;
+            --btn-undo-bg: #334155; --btn-undo-text: #94a3b8;
+            --btn-clear-bg: #450a0a; --btn-clear-text: #fca5a5;
+            --link-sky: #38bdf8;
+        }
+
+        * { box-sizing: border-box; font-family: "Pretendard Variable", Pretendard, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: var(--bg-color); display: flex; height: 100vh; gap: 20px; color: var(--text-color); overflow: hidden; transition: background-color 0.3s, color 0.3s; align-items: center; justify-content: center; }
+
+        .mandalart-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; height: 100%; min-width: 0; }
+        .mandalart-container {
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 4px; width: 100%; aspect-ratio: 4 / 3; max-height: calc(100vh - 40px); max-width: calc((100vh - 40px) * 4 / 3);
+            background-color: var(--border-color); padding: 4px; border-radius: 8px; border: 2px solid var(--border-color);
+        }
+        .sub-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 1.5px; background-color: var(--border-color); border: 0.5px solid var(--border-color); }
+
+        .cell {
+            background-color: var(--h3-bg); display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 8px; word-break: keep-all; line-height: 1.3; overflow: hidden;
+            transition: background 0.2s, color 0.2s; cursor: pointer; outline: none;
+        }
+        .cell.h1 { background-color: var(--h1-bg); color: var(--h1-color); font-weight: 800; font-size: var(--fs-h1); }
+        .cell.h2-inner, .cell.h2-outer { background-color: var(--h2-bg); color: var(--h2-color); font-weight: 700; font-size: var(--fs-h2); }
+        .cell.h2-outer { background-color: var(--h2-outer-bg); }
+        .cell.h3 { font-size: var(--fs-h3); }
+        
+        @media screen {
+            .cell:hover { background-color: var(--hover-bg); }
+            .cell.h1:hover:not(.active) { background-color: var(--h1-bg); color: var(--h1-color); }
+        }
+
+        .cell.active { box-shadow: inset 0 0 0 3px #3b82f6; background-color: var(--active-bg); z-index: 10; color: var(--active-color); }
+        .cell.h1.active { background-color: var(--h1-active-bg) !important; color: var(--h1-active-color) !important; }
+        .cell.done { color: var(--done-color) !important; text-decoration: line-through !important; }
+
+        .cell[contenteditable="true"] { background-color: var(--input-bg) !important; color: var(--text-color) !important; cursor: text; box-shadow: inset 0 0 0 2px #3b82f6; text-decoration: none !important; }
+
+        .current-date { position: fixed; top: 25px; right: 25px; font-weight: 700; font-size: var(--fs-h3); color: var(--text-color); z-index: 10; }
+        .current-date.hidden { display: none !important; }
+
+        .floating-btn-group { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 100; }
+        .floating-btn-group.hidden { display: none !important; }
+        .btn-main { width: 60px; height: 60px; border-radius: 50%; background-color: #3b82f6; color: white; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 24px; transition: 0.2s; }
+        .btn-main:hover { transform: scale(1.1) rotate(15deg); }
+        .btn-theme, .btn-help { width: 45px; height: 45px; border-radius: 50%; background-color: var(--btn-help-bg); color: var(--done-color); border: 1px solid var(--input-border); cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; align-self: flex-end; position: relative; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .help-tooltip { position: absolute; right: 55px; bottom: 0; background: var(--text-color); color: var(--bg-color); padding: 15px; border-radius: 8px; font-size: 13px; width: max-content; max-width: 350px; pointer-events: none; opacity: 0; transition: 0.2s; line-height: 1.6; z-index: 101; text-align: left; }
+        .btn-help:hover .help-tooltip { opacity: 1; transform: translateX(-5px); }
+
+        .detail-panel { 
+            width: 400px; flex-shrink: 0; background-color: var(--panel-bg); 
+            border-radius: 12px; box-shadow: -4px 0 15px -3px rgba(0,0,0,0.1); 
+            border: 1px solid var(--input-border); display: flex; flex-direction: column; 
+            overflow: hidden; max-height: calc(100vh - 40px); align-self: center;
+        }
+        .detail-panel.hidden { display: none !important; }
+        
+        .panel-header { padding: 20px; display: flex; align-items: center; gap: 10px; }
+        .title-checkbox { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+        .edit-title { flex: 1; font-size: 1.3rem; font-weight: 700; border: none; border-bottom: 2px solid #3b82f6; outline: none; background: transparent; color: var(--text-color); }
+        .close-btn { border: none; background: transparent; cursor: pointer; font-size: 24px; color: var(--done-color); }
+        
+        .panel-content { flex: 1; padding: 0 20px 10px 20px; display: flex; flex-direction: column; overflow-y: auto; }
+        .edit-content, .read-content { flex: 1; font-size: 1rem; border: 1px solid var(--input-border); background-color: var(--input-bg); color: var(--panel-text); border-radius: 8px; padding: 15px; }
+        .edit-content { resize: none; outline: none; line-height: 1.6; }
+        
+        .read-content { overflow-y: auto; line-height: 1.6; }
+        .read-content ul, .read-content ol { padding-left: 20px; }
+        .read-content li { margin-bottom: 4px; }
+        .read-content li:has(input[type="checkbox"]) { list-style-type: none; margin-left: -18px; }
+        .read-content li:not(:has(input[type="checkbox"])) + li:has(input[type="checkbox"]),
+        .read-content li:has(input[type="checkbox"]) + li:not(:has(input[type="checkbox"])) { margin-top: 12px; }
+
+        .read-content strong, .read-content b { font-weight: 800 !important; color: var(--text-color); }
+        .read-content img { max-width: 100% !important; height: auto !important; border-radius: 4px; display: block; margin: 10px 0; }
+        .read-content li:has(input[type="checkbox"]:checked) { color: var(--done-color); text-decoration: line-through; }
+        .read-content input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; cursor: pointer; }
+        .mode-hidden { display: none !important; }
+
+        .panel-bottom { background: var(--panel-bg); border-top: 1px solid var(--input-border); display: flex; flex-direction: column; }
+        .action-btns-row { display: flex; border-bottom: 1px solid var(--input-border); }
+        .action-btns-row button { flex: 1; padding: 12px; background: transparent; border: none; font-weight: 600; cursor: pointer; color: var(--text-color); }
+        .action-btns-row button:hover { background: var(--hover-bg); }
+        .action-btns-row button:first-child { border-right: 1px solid var(--input-border); }
+        
+        .settings-area { padding: 10.3px; display: flex; flex-direction: column; gap: 8.1px; max-height: 600px; overflow-y: auto; transition: 0.3s; }
+        .settings-area.collapsed { max-height: 0; padding: 0; opacity: 0; pointer-events: none; }
+        .setting-label { font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 초기화 버튼 스타일 */
+        .reset-link { font-size: 11px; color: #64748b; font-weight: normal; cursor: pointer; border: none; background: none; padding: 0; margin-left: 5px; }
+        .reset-link span { color: #ef4444; text-decoration: underline; }
+
+        .font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 2px; }
+        .settings-block { background: var(--input-bg); border: 1px solid var(--input-border); padding: 5px 10px; border-radius: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: var(--text-color); }
+        .font-btn { background: none; border: none; cursor: pointer; color: #3b82f6; font-weight: bold; padding: 0 4px; font-size: 14px; }
+        
+        .filling-btns { display: flex; gap: 8px; margin-bottom: 0; }
+        .footer-btns { display: flex; gap: 8px; margin-top: 1.8px; }
+        .save-btn, .load-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; color: white; }
+        .save-btn { background: #10b981; }
+        .save-btn:hover { background: #059669; }
+        .load-btn { background: #3b82f6; }
+        .load-btn:hover { background: #2563eb; }
+
+        .btn-clear { background: var(--btn-clear-bg); color: var(--btn-clear-text); border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-undo { background: var(--btn-undo-bg); color: var(--btn-undo-text); border: none; border-radius: 6px; padding: 8px; font-size: 12px; cursor: pointer; flex: 1; }
+        @media print {
+            :root, [data-theme="dark"] {
+                --h1-bg: #eff6ff !important; --h1-color: #1e293b !important;
+                --h2-bg: #eff6ff !important; --h2-outer-bg: #dbeafe !important; --h2-color: #1e40af !important;
+                --h3-bg: #ffffff !important; --border-color: #94a3b8 !important; --done-color: #94a3b8 !important;
+            }
+            @page { margin: 0; size: A4 landscape; }
+            body { margin: 0; padding: 0; background-color: white !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 100vw !important; height: 100vh !important; overflow: visible !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .mandalart-wrapper { width: 100%; height: 100%; padding: 5mm; }
+            .mandalart-container { width: 100% !important; height: 100% !important; aspect-ratio: auto !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; grid-template-rows: repeat(3, minmax(0, 1fr)) !important; gap: 1.5px !important; background-color: var(--border-color) !important; border: 2px solid var(--border-color) !important; box-shadow: none !important; }
+            .cell.h1 { background-color: #dbeafe !important; color: #1e293b !important; font-size: var(--print-fs-h1) !important; font-weight: 900 !important; }
+            .cell.h2-inner, .cell.h2-outer { font-size: var(--print-fs-h2) !important; }
+            .cell.h3 { font-size: var(--print-fs-h3) !important; }
+            .detail-panel, .floating-btn-group, .current-date { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mandalart-wrapper" id="wrapper">
+        <div id="mandalart" class="mandalart-container"></div>
+    </div>
+
+    <div id="current-date" class="current-date"></div>
+
+    <div id="floating-group" class="floating-btn-group">
+        <div id="help-trigger" class="btn-help">?
+            <div class="help-tooltip">
+                <b>단축키 가이드</b><br>
+                • <b>ESC</b> : 패널 닫기<br>
+                • <b>Ctrl + E</b> : 읽기/수정 전환<br>
+                • <b>셀 더블클릭</b> : 제목 수정<br>
+                • <b>Ctrl + P</b> : 인쇄<br>
+                • <b>체크박스 클릭</b> : 작업 완료<br>
+                <hr style="border:0; border-top:1px solid rgba(150,150,150,0.3); margin:10px 0;">
+                <b>마크다운 창 지원</b><br>
+                1. 번호 목록<br>
+                - 글머리 기호<br>
+                - [ ] 체크박스<br>
+                [링크](주소)<br>
+                *기울임*<br>
+                **굵음 (Bold)**<br>
+                ![](이미지주소)
+                <div id="secret-area" style="display: none;">
+                    <hr style="border:0; border-top:1px solid rgba(150,150,150,0.3); margin:10px 0;">
+                    <img src="data:image/png;base64,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" style="border-radius:4px; display:block; zoom:0.67;">
+                </div>
+            </div>
+        </div>
+        <button id="btn-theme" class="btn-theme" title="다크 모드 전환">🌙</button>
+        <button id="floating-btn" class="btn-main" title="설정 열기">⚙️</button>
+    </div>
+
+    <div id="detail-panel" class="detail-panel hidden">
+        <div class="panel-header">
+            <input type="checkbox" id="title-done" class="title-checkbox">
+            <input type="text" id="edit-title" class="edit-title" placeholder="제목을 입력하세요">
+            <button id="close-btn" class="close-btn">&times;</button>
+        </div>
+        <div class="panel-content">
+            <div id="read-content" class="read-content"></div>
+            <textarea id="edit-content" class="edit-content mode-hidden" placeholder="마크다운 내용을 입력하세요"></textarea>
+        </div>
+        <div class="panel-bottom">
+            <div class="action-btns-row">
+                <button id="btn-toggle-mode">✏️ 수정 모드 (Ctrl+E)</button>
+                <button id="btn-toggle-settings">⚙️ 설정 열기</button>
+            </div>
+            <div id="settings-area" class="settings-area collapsed">
+                <div class="setting-label">
+                    💻 화면 폰트 크기 
+                    <button class="reset-link" onclick="resetFonts('screen')">(<span>초기화</span>)</button>
+                </div>
+                <div class="font-grid">
+                    <div class="settings-block">전체 <div class="btns"><button class="font-btn" onclick="adjustFont('screen','global',-1)">-</button><button class="font-btn" onclick="adjustFont('screen','global',1)">+</button></div></div>
+                    <div class="settings-block">H1 <div class="btns"><button class="font-btn" onclick="adjustFont('screen','h1',-1)">-</button><button class="font-btn" onclick="adjustFont('screen','h1',1)">+</button></div></div>
+                    <div class="settings-block">H2 <div class="btns"><button class="font-btn" onclick="adjustFont('screen','h2',-1)">-</button><button class="font-btn" onclick="adjustFont('screen','h2',1)">+</button></div></div>
+                    <div class="settings-block">H3 <div class="btns"><button class="font-btn" onclick="adjustFont('screen','h3',-1)">-</button><button class="font-btn" onclick="adjustFont('screen','h3',1)">+</button></div></div>
+                </div>
+
+                <div class="setting-label">
+                    🖨️ 인쇄 폰트 크기 
+                    <button class="reset-link" onclick="resetFonts('print')">(<span>초기화</span>)</button>
+                </div>
+                <div class="font-grid">
+                    <div class="settings-block">전체 <div class="btns"><button class="font-btn" onclick="adjustFont('print','global',-1)">-</button><button class="font-btn" onclick="adjustFont('print','global',1)">+</button></div></div>
+                    <div class="settings-block">H1 <div class="btns"><button class="font-btn" onclick="adjustFont('print','h1',-1)">-</button><button class="font-btn" onclick="adjustFont('print','h1',1)">+</button></div></div>
+                    <div class="settings-block">H2 <div class="btns"><button class="font-btn" onclick="adjustFont('print','h2',-1)">-</button><button class="font-btn" onclick="adjustFont('print','h2',1)">+</button></div></div>
+                    <div class="settings-block">H3 <div class="btns"><button class="font-btn" onclick="adjustFont('print','h3',-1)">-</button><button class="font-btn" onclick="adjustFont('print','h3',1)">+</button></div></div>
+                </div>
+                
+                <div class="filling-btns">
+                    <button id="btn-clear" class="btn-clear">🗑️ 비우기</button>
+                    <button id="btn-undo" class="btn-undo" disabled>↩️ 되돌리기</button>
+                </div>
+                
+                <div class="footer-btns">
+                    <input type="file" id="md-loader" accept=".md" style="display:none;">
+                    <button id="btn-load" class="load-btn">📤 불러오기</button>
+                    <button id="btn-save" class="save-btn">📥 다운로드</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="markdown-data" type="text/markdown">
+여기에 복붙하세요
+    </script>
+
+    <script>
+        let mandalartData = { h1: {title:'', done:false, desc:''}, h2s: [] };
+        let backupData = null; let activeCellInfo = null; let isEditMode = false;
+        let helpClickCount = 0;
+
+        // 폰트 기본값 정의
+        const defaultFonts = {
+            screen: { global: 14, h1: 23, h2: 19, h3: 17 },
+            print: { h1: 16, h2: 14, h3: 12 }
+        };
+
+        const detailPanel = document.getElementById('detail-panel');
+        const editTitle = document.getElementById('edit-title');
+        const titleDone = document.getElementById('title-done');
+        const readContent = document.getElementById('read-content');
+        const editContent = document.getElementById('edit-content');
+        const floatingGroup = document.getElementById('floating-group');
+        const themeBtn = document.getElementById('btn-theme');
+        const dateDisplay = document.getElementById('current-date');
+        const helpTrigger = document.getElementById('help-trigger');
+        const secretArea = document.getElementById('secret-area');
+
+        window.onload = () => {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            if (currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeBtn.textContent = '☀️';
+            }
+            marked.setOptions({ breaks: true, gfm: true });
+            
+            // 데이터 로드
+            const cached = localStorage.getItem('mandalartCache');
+            const rawText = (cached && cached.trim()) ? cached : document.getElementById('markdown-data').textContent;
+            mandalartData = parseMarkdown(rawText);
+            renderMandalart();
+            updateCurrentDate();
+
+            // 저장된 폰트 로드
+            loadFontSettings();
+        };
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            dateDisplay.textContent = `${year}-${month}-${day}`;
+        }
+
+        themeBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeBtn.textContent = '🌙';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeBtn.textContent = '☀️';
+            }
+        });
+
+        function parseMarkdown(rawMd) {
+            const lines = rawMd.split('\n');
+            let data = { h1: {title:'', done:false, desc:''}, h2s: [] };
+            let currentLevel = 0;
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('# ')) { 
+                    const t = trimmed.replace('# ', '');
+                    data.h1.title = t.replace('✅ ', '');
+                    data.h1.done = t.startsWith('✅ ');
+                    currentLevel = 1;
+                } else if (trimmed.startsWith('## ')) {
+                    const t = trimmed.replace('## ', '');
+                    data.h2s.push({ title: t.replace('✅ ', ''), done: t.startsWith('✅ '), description: '', h3s: [] });
+                    currentLevel = 2;
+                } else if (trimmed.startsWith('### ')) {
+                    const t = trimmed.replace('### ', '');
+                    const h2 = data.h2s[data.h2s.length - 1];
+                    if (h2) h2.h3s.push({ title: t.replace('✅ ', ''), done: t.startsWith('✅ '), content: '' });
+                    currentLevel = 3;
+                } else if (trimmed !== '' && trimmed !== '여기에 복붙하세요') {
+                    if (currentLevel === 3) data.h2s[data.h2s.length-1].h3s[data.h2s[data.h2s.length-1].h3s.length-1].content += line + '\n';
+                    else if (currentLevel === 2) data.h2s[data.h2s.length-1].description += line + '\n';
+                    else if (currentLevel === 1) data.h1.desc += line + '\n';
+                }
+            });
+            while(data.h2s.length < 8) data.h2s.push({ title: '', done: false, description: '', h3s: [] });
+            data.h2s.forEach(h2 => { while(h2.h3s.length < 8) h2.h3s.push({ title: '', done: false, content: '' }); });
+            return data;
+        }
+
+        function renderMandalart() {
+            const container = document.getElementById('mandalart');
+            container.innerHTML = ''; 
+            const layout = [0, 1, 2, 3, null, 4, 5, 6, 7];
+            layout.forEach((h2Idx, blockIdx) => {
+                const subGrid = document.createElement('div');
+                subGrid.className = 'sub-grid';
+                if (blockIdx === 4) { 
+                    layout.forEach(inner => {
+                        const cell = document.createElement('div');
+                        if (inner === null) {
+                            cell.className = 'cell h1' + (mandalartData.h1.done ? ' done' : '');
+                            cell.textContent = mandalartData.h1.title;
+                            cell.onclick = () => openEditor('h1', null, null, cell);
+                            cell.ondblclick = (e) => makeEditable(e, 'h1', null, null);
+                        } else {
+                            const d = mandalartData.h2s[inner];
+                            cell.className = 'cell h2-inner' + (d.done ? ' done' : '');
+                            cell.textContent = d.title;
+                            cell.onclick = () => openEditor('h2', inner, null, cell);
+                            cell.ondblclick = (e) => makeEditable(e, 'h2', inner, null);
+                        }
+                        subGrid.appendChild(cell);
+                    });
+                } else { 
+                    const h2 = mandalartData.h2s[h2Idx];
+                    layout.forEach(inner => {
+                        const cell = document.createElement('div');
+                        if (inner === null) {
+                            cell.className = 'cell h2-outer' + (h2.done ? ' done' : '');
+                            cell.textContent = h2.title;
+                            cell.onclick = () => openEditor('h2', h2Idx, null, cell);
+                            cell.ondblclick = (e) => makeEditable(e, 'h2', h2Idx, null);
+                        } else {
+                            const h3 = h2.h3s[inner];
+                            cell.className = 'cell h3' + (h3.done ? ' done' : '');
+                            cell.textContent = h3.title;
+                            cell.onclick = () => openEditor('h3', h2Idx, inner, cell);
+                            cell.ondblclick = (e) => makeEditable(e, 'h3', h2Idx, inner);
+                        }
+                        subGrid.appendChild(cell);
+                    });
+                }
+                container.appendChild(subGrid);
+            });
+        }
+
+        function makeEditable(e, type, h2Idx, h3Idx) {
+            const cell = e.target;
+            cell.contentEditable = true;
+            cell.focus();
+            cell.onblur = () => {
+                cell.contentEditable = false;
+                const newTitle = cell.textContent.trim();
+                if (type === 'h1') mandalartData.h1.title = newTitle;
+                else if (type === 'h2') mandalartData.h2s[h2Idx].title = newTitle;
+                else if (type === 'h3') mandalartData.h2s[h2Idx].h3s[h3Idx].title = newTitle;
+                renderMandalart();
+                saveToCache();
+            };
+            cell.onkeydown = (evt) => { if (evt.key === 'Enter') cell.blur(); };
+        }
+
+        function openEditor(type, h2Idx, h3Idx, el) {
+            activeCellInfo = { type, h2Idx, h3Idx, el };
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            if (type === 'h1') { editTitle.value = mandalartData.h1.title; titleDone.checked = mandalartData.h1.done; editContent.value = mandalartData.h1.desc.trim(); }
+            else if (type === 'h2') { editTitle.value = mandalartData.h2s[h2Idx].title; titleDone.checked = mandalartData.h2s[h2Idx].done; editContent.value = mandalartData.h2s[h2Idx].description.trim(); }
+            else { const h3 = mandalartData.h2s[h2Idx].h3s[h3Idx]; editTitle.value = h3.title; titleDone.checked = h3.done; editContent.value = h3.content.trim(); }
+            updateReadMode();
+            detailPanel.classList.remove('hidden');
+            floatingGroup.classList.add('hidden');
+            dateDisplay.classList.add('hidden');
+            syncPanelHeight();
+        }
+
+        function syncPanelHeight() {
+            const containerHeight = document.getElementById('mandalart').offsetHeight;
+            detailPanel.style.height = containerHeight + 'px';
+        }
+
+        titleDone.onchange = (e) => {
+            if (!activeCellInfo) return;
+            const { type, h2Idx, h3Idx } = activeCellInfo;
+            const val = e.target.checked;
+            if (type === 'h1') mandalartData.h1.done = val;
+            else if (type === 'h2') mandalartData.h2s[h2Idx].done = val;
+            else mandalartData.h2s[h2Idx].h3s[h3Idx].done = val;
+            renderMandalart();
+            saveToCache();
+        };
+
+        editTitle.oninput = (e) => {
+            if (!activeCellInfo) return;
+            const { type, h2Idx, h3Idx } = activeCellInfo;
+            const val = e.target.value;
+            if (type === 'h1') mandalartData.h1.title = val;
+            else if (type === 'h2') mandalartData.h2s[h2Idx].title = val;
+            else if (type === 'h3') mandalartData.h2s[h2Idx].h3s[h3Idx].title = val;
+            renderMandalart();
+            saveToCache();
+        };
+
+        editContent.oninput = () => {
+            if (!activeCellInfo) return;
+            const { type, h2Idx, h3Idx } = activeCellInfo;
+            const val = editContent.value;
+            if (type === 'h1') mandalartData.h1.desc = val;
+            else if (type === 'h2') mandalartData.h2s[h2Idx].description = val;
+            else if (type === 'h3') mandalartData.h2s[h2Idx].h3s[h3Idx].content = val;
+            saveToCache();
+        };
+
+        readContent.addEventListener('click', (e) => {
+            if (e.target.type === 'checkbox') {
+                const checkboxes = Array.from(readContent.querySelectorAll('input[type="checkbox"]'));
+                const index = checkboxes.indexOf(e.target);
+                if (index === -1) return;
+                let count = 0;
+                const newText = editContent.value.replace(/\[[ xX]\]/g, (match) => {
+                    if (count++ === index) return e.target.checked ? '[x]' : '[ ]';
+                    return match;
+                });
+                editContent.value = newText;
+                const { type, h2Idx, h3Idx } = activeCellInfo;
+                if (type === 'h1') mandalartData.h1.desc = newText;
+                else if (type === 'h2') mandalartData.h2s[h2Idx].description = newText;
+                else if (type === 'h3') mandalartData.h2s[h2Idx].h3s[h3Idx].content = newText;
+                saveToCache();
+                updateReadMode();
+            }
+        });
+
+        function toggleEdit() {
+            isEditMode = !isEditMode;
+            readContent.classList.toggle('mode-hidden', isEditMode);
+            editContent.classList.toggle('mode-hidden', !isEditMode);
+            document.getElementById('btn-toggle-mode').textContent = isEditMode ? '📖 읽기 모드 (Ctrl+E)' : '✏️ 수정 모드 (Ctrl+E)';
+            if (isEditMode) editContent.focus(); else updateReadMode();
+        }
+
+        function updateReadMode() {
+            const raw = editContent.value.trim();
+            if (!raw) { readContent.innerHTML = '<span style="color:var(--done-color);">내용이 없습니다.</span>'; return; }
+            readContent.innerHTML = marked.parse(raw);
+            readContent.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.removeAttribute('disabled'));
+        }
+
+        window.onkeydown = (e) => {
+            if (e.key === 'Escape') closePanel();
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') { e.preventDefault(); if (!detailPanel.classList.contains('hidden')) toggleEdit(); }
+        };
+
+        function closePanel() { 
+            detailPanel.classList.add('hidden'); 
+            floatingGroup.classList.remove('hidden'); 
+            dateDisplay.classList.remove('hidden');
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('active')); 
+            activeCellInfo = null; 
+        }
+
+        document.getElementById('close-btn').onclick = closePanel;
+        document.getElementById('floating-btn').onclick = () => { 
+            const h1 = document.querySelector('.cell.h1'); 
+            openEditor('h1', null, null, h1); 
+            document.getElementById('settings-area').classList.remove('collapsed'); 
+            dateDisplay.classList.add('hidden');
+        };
+
+        document.getElementById('btn-toggle-settings').onclick = () => document.getElementById('settings-area').classList.toggle('collapsed');
+        document.getElementById('btn-toggle-mode').onclick = toggleEdit;
+
+        function saveToCache() {
+            let md = `# ${(mandalartData.h1.done?'✅ ':'')+mandalartData.h1.title}\n${mandalartData.h1.desc}\n`;
+            mandalartData.h2s.forEach(h2 => { if(!h2.title) return; md += `## ${(h2.done?'✅ ':'')+h2.title}\n${h2.description}`; h2.h3s.forEach(h3 => { if(h3.title) md += `### ${(h3.done?'✅ ':'')+h3.title}\n${h3.content}`; }); });
+            localStorage.setItem('mandalartCache', md);
+        }
+
+        // 폰트 조절 로직
+        function adjustFont(mode, target, amount) {
+            const root = document.documentElement;
+            const prefix = mode === 'screen' ? '--fs-' : '--print-fs-';
+            if (target === 'global') { ['h1', 'h2', 'h3'].forEach(t => adjustFont(mode, t, amount)); return; }
+            const varName = prefix + target;
+            const current = parseInt(getComputedStyle(root).getPropertyValue(varName));
+            const newVal = current + amount;
+            root.style.setProperty(varName, newVal + 'px');
+            
+            saveFontSettings();
+            setTimeout(syncPanelHeight, 100);
+        }
+
+        // [추가] 폰트 초기화 로직
+        function resetFonts(mode) {
+            const root = document.documentElement;
+            if (mode === 'screen') {
+                Object.entries(defaultFonts.screen).forEach(([key, val]) => {
+                    root.style.setProperty('--fs-' + key, val + 'px');
+                });
+            } else {
+                Object.entries(defaultFonts.print).forEach(([key, val]) => {
+                    root.style.setProperty('--print-fs-' + key, val + 'px');
+                });
+            }
+            saveFontSettings();
+            setTimeout(syncPanelHeight, 100);
+        }
+
+        // [추가] 폰트 설정 저장 및 로드
+        function saveFontSettings() {
+            const root = document.documentElement;
+            const settings = {
+                screen: {
+                    global: parseInt(root.style.getPropertyValue('--fs-global')),
+                    h1: parseInt(root.style.getPropertyValue('--fs-h1')),
+                    h2: parseInt(root.style.getPropertyValue('--fs-h2')),
+                    h3: parseInt(root.style.getPropertyValue('--fs-h3'))
+                },
+                print: {
+                    h1: parseInt(root.style.getPropertyValue('--print-fs-h1')),
+                    h2: parseInt(root.style.getPropertyValue('--print-fs-h2')),
+                    h3: parseInt(root.style.getPropertyValue('--print-fs-h3'))
+                }
+            };
+            localStorage.setItem('mandalartFontCache', JSON.stringify(settings));
+        }
+
+        function loadFontSettings() {
+            const cached = localStorage.getItem('mandalartFontCache');
+            if (!cached) return;
+            const settings = JSON.parse(cached);
+            const root = document.documentElement;
+            
+            if (settings.screen) {
+                Object.entries(settings.screen).forEach(([key, val]) => { if(val) root.style.setProperty('--fs-' + key, val + 'px'); });
+            }
+            if (settings.print) {
+                Object.entries(settings.print).forEach(([key, val]) => { if(val) root.style.setProperty('--print-fs-' + key, val + 'px'); });
+            }
+        }
+
+        helpTrigger.addEventListener('click', () => {
+            helpClickCount++;
+            if (helpClickCount === 3) { secretArea.style.display = 'block'; }
+        });
+
+        document.getElementById('btn-clear').onclick = () => {
+            if(confirm("모든 데이터를 삭제할까요?")) {
+                backupData = JSON.parse(JSON.stringify(mandalartData));
+                document.getElementById('btn-undo').disabled = false;
+                mandalartData = parseMarkdown(""); renderMandalart(); saveToCache();
+            }
+        };
+
+        document.getElementById('btn-undo').onclick = () => {
+            if(backupData) { mandalartData = backupData; renderMandalart(); saveToCache(); backupData = null; document.getElementById('btn-undo').disabled = true; }
+        };
+
+        document.getElementById('btn-load').onclick = () => document.getElementById('md-loader').click();
+        document.getElementById('md-loader').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const text = ev.target.result;
+                mandalartData = parseMarkdown(text);
+                renderMandalart();
+                saveToCache();
+                alert("파일을 성공적으로 불러왔습니다.");
+            };
+            reader.readAsText(file);
+        };
+
+        document.getElementById('btn-save').onclick = () => {
+            const md = localStorage.getItem('mandalartCache');
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (mandalartData.h1.title || 'mandalart') + '.md'; a.click();
+        };
+    </script>
+</body>
+</html>
