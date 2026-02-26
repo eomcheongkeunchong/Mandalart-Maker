@@ -1,7 +1,9 @@
 # 만다라트 제작기
 
-![](mandalart_screenshot.jpeg)
-![](mandalart_screenshot_dark.jpeg)
+| ![](mandalart_screenshot.jpeg)
+ | ![](mandalart_screenshot_dark.jpeg)
+ |
+| :--- | :--- |
 
 웹 브라우저에서 즉시 실행 가능한 **만다라트 제작기**입니다.
 복잡한 설치 없이 html 파일 하나만으로 동작하며, 마크다운 에디터와 로컬 스토리지 자동 저장 기능을 제공합니다.
